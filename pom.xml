@@ -17,6 +17,7 @@
 			<groupId>org.apache.samza</groupId>
 			<artifactId>samza-api</artifactId>
 			<version>${samza.version}</version>
+			<scope>compile</scope>
 		</dependency>
 
 		<!-- RabbitMQ client -->
@@ -24,6 +25,7 @@
 			<groupId>com.rabbitmq</groupId>
 			<artifactId>amqp-client</artifactId>
 			<version>${amqp-client.version}</version>
+			<scope>compile</scope>			
 		</dependency>
 	</dependencies>
 </project>
