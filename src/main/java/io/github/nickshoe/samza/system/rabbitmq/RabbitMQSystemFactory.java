@@ -19,9 +19,6 @@ import io.github.nickshoe.samza.system.rabbitmq.util.RabbitMQUtil;
 
 /**
  * This is class is heavily inspired from Samza's official RabbitMQSystemFactory class
- * 
- * @author nicolo
- *
  */
 public class RabbitMQSystemFactory implements SystemFactory {
 
@@ -57,6 +54,7 @@ public class RabbitMQSystemFactory implements SystemFactory {
 	    logger.info("Creating rabbitmq producer for system {}", systemName);
 	    
 	    // TODO: handle the following config
+	    // TaskConfig taskConfig = new TaskConfig(config);
 	    // boolean dropProducerExceptions = taskConfig.getDropProducerErrors();
 	    
 	    RabbitMQSystemProducer rabbitMQSystemProducer = new RabbitMQSystemProducer(systemName, connection, channel);
