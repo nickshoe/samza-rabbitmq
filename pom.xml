@@ -25,7 +25,7 @@
 			<groupId>com.rabbitmq</groupId>
 			<artifactId>amqp-client</artifactId>
 			<version>${amqp-client.version}</version>
-			<scope>compile</scope>			
+			<scope>compile</scope>
 		</dependency>
 	</dependencies>
 </project>

@@ -1,4 +1,4 @@
-package io.github.nickshoe.samza.system.rabbitmq.descriptors;
+package io.github.nickshoe.samza.system.rabbitmq;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;

@@ -1,4 +1,4 @@
-package io.github.nickshoe.samza.system.rabbitmq.descriptors;
+package io.github.nickshoe.samza.system.rabbitmq;
 
 /**
  * This is class is heavily inspired from Samza's official KafkaConsumerProxyFactory class

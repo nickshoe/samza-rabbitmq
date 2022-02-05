@@ -1,12 +1,10 @@
-package io.github.nickshoe.samza.system.rabbitmq.descriptors;
+package io.github.nickshoe.samza.system.rabbitmq;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.samza.Partition;
@@ -20,10 +18,6 @@ import org.slf4j.LoggerFactory;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
-import com.rabbitmq.client.ConnectionFactory;
-import com.rabbitmq.client.ConnectionFactoryConfigurator;
-
-import io.github.nickshoe.samza.system.rabbitmq.config.RabbitMQConsumerConfig;
 
 /**
  * This is class is heavily inspired from Samza's official KafkaSystemConsumer class
@@ -65,66 +59,6 @@ public class RabbitMQSystemConsumer<K, V> extends BlockingEnvelopeMap implements
 		// Create the proxy to do the actual message reading.
 		this.proxy = rabbitMQConsumerProxyFactory.create(this);
 		logger.info("{}: Created proxy {} ", this, proxy);
-	}
-
-	/**
-	 * Create internal RabbitMQ connection object, which will be used in the Proxy.
-	 * 
-	 * @param systemName
-	 * @param rabbitMQConsumerConfig
-	 * @return the created connection object
-	 */
-	public static Connection createConnection(String systemName, RabbitMQConsumerConfig rabbitMQConsumerConfig) {
-		logger.info("Instantiating Connection for systemName {} with properties {}", systemName,
-				rabbitMQConsumerConfig);
-
-		final ConnectionFactory factory = new ConnectionFactory();
-
-		factory.setHost((String) rabbitMQConsumerConfig.get(ConnectionFactoryConfigurator.HOST));
-		factory.setPort((Integer) rabbitMQConsumerConfig.get(ConnectionFactoryConfigurator.PORT));
-		factory.setUsername((String) rabbitMQConsumerConfig.get(ConnectionFactoryConfigurator.USERNAME));
-		factory.setPassword((String) rabbitMQConsumerConfig.get(ConnectionFactoryConfigurator.PASSWORD));
-
-		try {
-			// the actual TCP connection to the broker
-			Connection connection = factory.newConnection();
-			logger.debug("Connection established with the broker: {}",
-					connection.getAddress().getHostName() + ":" + connection.getPort());
-
-			return connection;
-		} catch (IOException | TimeoutException e) {
-			logger.error("An error occurred while creating the rabbitmq connection: {}", e.getMessage());
-			e.printStackTrace();
-
-			throw new SamzaException(e);
-		}
-	}
-
-	/**
-	 * Create internal RabbitMQ channel object, which will be used in the Proxy.
-	 * 
-	 * @param systemName
-	 * @param rabbitMQConsumerConfig
-	 * @param connection
-	 * @return the created channel object
-	 */
-	public static Channel createChannel(String systemName, RabbitMQConsumerConfig rabbitMQConsumerConfig,
-			Connection connection) {
-		logger.info("Instantiating Channel for systemName {} with properties {}", systemName, rabbitMQConsumerConfig);
-
-		try {
-			// a channel can be thought of as "lightweight connections that share a single
-			// TCP connection"
-			Channel channel = connection.createChannel();
-			logger.debug("Channel created over the existing connection: {}", channel.getChannelNumber());
-
-			return channel;
-		} catch (IOException e) {
-			logger.error("An error occurred while creating the rabbitmq channel: {}", e.getMessage());
-			e.printStackTrace();
-
-			throw new SamzaException(e);
-		}
 	}
 
 	/**

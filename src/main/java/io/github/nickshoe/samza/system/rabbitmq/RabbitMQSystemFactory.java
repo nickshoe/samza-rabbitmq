@@ -1,4 +1,4 @@
-package io.github.nickshoe.samza.system.rabbitmq.descriptors;
+package io.github.nickshoe.samza.system.rabbitmq;
 
 import org.apache.samza.config.Config;
 import org.apache.samza.metrics.MetricsRegistry;
@@ -14,6 +14,8 @@ import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 
 import io.github.nickshoe.samza.system.rabbitmq.config.RabbitMQConsumerConfig;
+import io.github.nickshoe.samza.system.rabbitmq.config.RabbitMQProducerConfig;
+import io.github.nickshoe.samza.system.rabbitmq.util.RabbitMQUtil;
 
 /**
  * This is class is heavily inspired from Samza's official RabbitMQSystemFactory class
@@ -27,12 +29,12 @@ public class RabbitMQSystemFactory implements SystemFactory {
 	
 	@Override
 	public SystemConsumer getConsumer(String systemName, Config config, MetricsRegistry registry) {
-		// TODO: implement consumer metrics		
+		// TODO: implement consumer metrics
 
 		RabbitMQConsumerConfig rabbitMQConsumerConfig = RabbitMQConsumerConfig.getRabbitMQSystemConsumerConfig(config, systemName);
 		
-		Connection connection = RabbitMQSystemConsumer.createConnection(systemName, rabbitMQConsumerConfig);
-		Channel channel = RabbitMQSystemConsumer.createChannel(systemName, rabbitMQConsumerConfig, connection);
+		Connection connection = RabbitMQUtil.createConnection(systemName, rabbitMQConsumerConfig);
+		Channel channel = RabbitMQUtil.createChannel(systemName, connection);
 		
 		RabbitMQConsumerProxyFactory<Object, Object> rabbitMQConsumerProxyFactory = new RabbitMQConsumerProxy.BaseFactory<>(channel, systemName);
 		
@@ -45,8 +47,21 @@ public class RabbitMQSystemFactory implements SystemFactory {
 
 	@Override
 	public SystemProducer getProducer(String systemName, Config config, MetricsRegistry registry) {
-		// TODO Auto-generated method stub
-		return null;
+		// TODO: implement producer metrics
+		
+	    RabbitMQProducerConfig producerConfig = RabbitMQProducerConfig.getRabbitMQSystemProducerConfig(config, systemName);
+
+	    Connection connection = RabbitMQUtil.createConnection(systemName, producerConfig.getProducerProperties());
+		Channel channel = RabbitMQUtil.createChannel(systemName, connection);
+
+	    logger.info("Creating rabbitmq producer for system {}", systemName);
+	    
+	    // TODO: handle the following config
+	    // boolean dropProducerExceptions = taskConfig.getDropProducerErrors();
+	    
+	    RabbitMQSystemProducer rabbitMQSystemProducer = new RabbitMQSystemProducer(systemName, connection, channel);
+	    
+	    return rabbitMQSystemProducer;
 	}
 
 	@Override

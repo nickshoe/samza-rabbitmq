@@ -9,6 +9,8 @@ import org.apache.samza.system.descriptors.OutputDescriptorProvider;
 import org.apache.samza.system.descriptors.SimpleInputDescriptorProvider;
 import org.apache.samza.system.descriptors.SystemDescriptor;
 
+import io.github.nickshoe.samza.system.rabbitmq.RabbitMQSystemFactory;
+
 /**
  * A {@link RabbitMQSystemDescriptor} can be used for specifying Samza and RabbitMQ-specific properties of a RabbitMQ
  * input/output system. It can also be used for obtaining {@link RabbitMQInputDescriptor}s and

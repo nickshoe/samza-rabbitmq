@@ -63,12 +63,6 @@ public class RabbitMQConsumerConfig extends HashMap<String, Object> {
 
 		// TODO: set virtual host?
 		
-		String idDeserializer = config.get(String.format("systems.%s.consumer.%s", systemName, "id-deserializer"));
-		consumerProps.put("id-deserializer", idDeserializer);
-		
-		String bodyDeserializer = config.get(String.format("systems.%s.consumer.%s", systemName, "body-deserializer"));
-		consumerProps.put("body-deserializer", bodyDeserializer);
-		
 		return new RabbitMQConsumerConfig(consumerProps);
 	}
 
