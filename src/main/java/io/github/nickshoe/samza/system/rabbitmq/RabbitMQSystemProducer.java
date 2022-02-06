@@ -54,16 +54,18 @@ public class RabbitMQSystemProducer implements SystemProducer {
 	@Override
 	public void send(String source, OutgoingMessageEnvelope envelope) {
 		logger.trace("Enqueuing message: {}, {}.", source, envelope);
-
+		
 	    String queueName = envelope.getSystemStream().getStream();
 	    if (queueName == null || queueName.isEmpty()) {
 	      throw new IllegalArgumentException("Invalid system stream: " + envelope.getSystemStream());
 	    }
 
+	    byte[] key = (byte[]) envelope.getKey();
+		byte[] message = (byte[]) envelope.getMessage();
+	    
 	    try {
-	    	// TODO ser/des based on config
-			String messageId = (String) envelope.getKey();
-			byte[] messageBody = ((String) envelope.getMessage()).getBytes(StandardCharsets.UTF_8);
+			String messageId = new String(key, StandardCharsets.UTF_8);
+			byte[] messageBody = message;
 			
 			AMQP.BasicProperties properties = new AMQP.BasicProperties().builder().messageId(messageId).build();
 			

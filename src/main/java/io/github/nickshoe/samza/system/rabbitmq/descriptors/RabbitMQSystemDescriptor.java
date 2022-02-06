@@ -36,11 +36,11 @@ public class RabbitMQSystemDescriptor extends SystemDescriptor<RabbitMQSystemDes
 	private Optional<String> passwordOptional = Optional.empty();
 	
 	/**
-	   * Constructs a {@link RabbitMQSystemDescriptor} instance with no system level serde.
-	   * Serdes must be provided explicitly at stream level when getting input or output descriptors.
-	   *
-	   * @param systemName name of this system
-	   */
+     * Constructs a {@link RabbitMQSystemDescriptor} instance with no system level serde.
+     * Serdes must be provided explicitly at stream level when getting input or output descriptors.
+     *
+     * @param systemName name of this system
+     */
 	public RabbitMQSystemDescriptor(String systemName) {
 		super(systemName, FACTORY_CLASS_NAME, null, null);
 	}
