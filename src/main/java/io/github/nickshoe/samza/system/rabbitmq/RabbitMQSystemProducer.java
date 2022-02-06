@@ -61,8 +61,9 @@ public class RabbitMQSystemProducer implements SystemProducer {
 	    }
 
 	    try {
-			String messageId = new String((byte[]) envelope.getKey(), StandardCharsets.UTF_8);
-			byte[] messageBody = (byte[]) envelope.getMessage();
+	    	// TODO ser/des based on config
+			String messageId = (String) envelope.getKey();
+			byte[] messageBody = ((String) envelope.getMessage()).getBytes(StandardCharsets.UTF_8);
 			
 			AMQP.BasicProperties properties = new AMQP.BasicProperties().builder().messageId(messageId).build();
 			
