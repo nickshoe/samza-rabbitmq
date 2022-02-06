@@ -9,6 +9,7 @@ import com.rabbitmq.client.ConnectionFactoryConfigurator;
 
 public class RabbitMQProducerConfig {
 
+	@SuppressWarnings("unused")
 	private final String systemName;
 	private final Map<String, String> config;
 

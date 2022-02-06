@@ -20,8 +20,8 @@ public class RabbitMQUtil {
 	/**
 	 * Create internal RabbitMQ connection object.
 	 * 
-	 * @param systemName
-	 * @param config
+	 * @param systemName the system name
+	 * @param config the configurations
 	 * @return the created connection object
 	 */
 	public static Connection createConnection(String systemName, Map<String, Object> config) {
@@ -52,8 +52,8 @@ public class RabbitMQUtil {
 	/**
 	 * Create internal RabbitMQ channel object, which will be used in the Proxy.
 	 * 
-	 * @param systemName
-	 * @param connection
+	 * @param systemName the system name
+	 * @param connection the RabbitMQ connection
 	 * @return the created channel object
 	 */
 	public static Channel createChannel(String systemName, Connection connection) {

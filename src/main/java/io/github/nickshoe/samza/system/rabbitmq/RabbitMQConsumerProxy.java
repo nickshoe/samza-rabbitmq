@@ -20,7 +20,7 @@ import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Delivery;
 
 /**
- * This is class is heavily inspired from Samza's official KafkaConsumerProxy class
+ * This class is heavily inspired to Samza's official KafkaConsumerProxy class
  *
  * @param <K>
  * @param <V>
@@ -138,14 +138,10 @@ public class RabbitMQConsumerProxy<K, V> {
 				consumerPollThreadStartLatch.countDown();
 				logger.info("Starting consumer poll thread {} for system {}", consumerPollThread.getName(), systemName);
 
-				//while (isRunning) {
-					fetchMessages();
-				//}
+				fetchMessages();
 			} catch (Throwable throwable) {
-				logger.error(String.format("Error in RabbitMQConsumerProxy poll thread for system: %s.", systemName),
-						throwable);
-				// RabbitMQSystemConsumer uses the failureCause to propagate the throwable to
-				// the container
+				logger.error(String.format("Error in RabbitMQConsumerProxy poll thread for system: %s.", systemName), throwable);
+				// RabbitMQSystemConsumer uses the failureCause to propagate the throwable to the container
 				failureCause = throwable;
 				isRunning = false;
 				rabbitMQSystemConsumer.setFailureCause(this.failureCause);
@@ -158,9 +154,8 @@ public class RabbitMQConsumerProxy<K, V> {
 	}
 
 	private void fetchMessages() throws IOException {
-
 		// the actual consumption of the messages from rabbitmq
-		boolean shouldAutoAck = true; // TODO: from config
+		boolean shouldAutoAck = true; // TODO: which are the implication with respect to Samza commit handling and offsets?
 		this.channel.basicConsume(this.queue, shouldAutoAck, (String consumerTag, Delivery message) -> {
 			Map<SystemStreamPartition, List<IncomingMessageEnvelope>> response = processMessage(message);
 
@@ -168,15 +163,14 @@ public class RabbitMQConsumerProxy<K, V> {
 			for (Map.Entry<SystemStreamPartition, List<IncomingMessageEnvelope>> e : response.entrySet()) {
 				List<IncomingMessageEnvelope> envelopes = e.getValue();
 				if (envelopes != null) {
-					moveMessagesToTheirQueue(e.getKey(), envelopes);
+					moveMessagesSamzaQueue(e.getKey(), envelopes);
 				}
 			}
 		}, (String consumerTag) -> {
 			logger.error("The message consumer {} was cancelled...", consumerTag);
 
-			// TODO: how to restart in samza?
+			// TODO: what to do here?
 		});
-
 	}
 
 	private Map<SystemStreamPartition, List<IncomingMessageEnvelope>> processMessage(Delivery delivery) {
@@ -207,35 +201,33 @@ public class RabbitMQConsumerProxy<K, V> {
 		byte[] key = delivery.getProperties().getMessageId().getBytes(StandardCharsets.UTF_8);
 		byte[] message = delivery.getBody();
 		
-		String offset = null; // TODO: how to value this?
-		int size = getKeyPlusMessageSize(delivery); // TODO: compute this based on key and message objects
-		long eventTime = -1; // TODO: ?
+		String offset = null; // TODO: implement offset handling
+		int size = (int) getKeyPlusMessageSize(delivery);
+		long eventTime = -1; // TODO: what value should be used if no event timestamp is available?
 		if (delivery.getProperties().getTimestamp() != null) {
 			eventTime = delivery.getProperties().getTimestamp().toInstant().toEpochMilli();
 		}
 		long arrivalTime = Instant.now().toEpochMilli();
+		
 		IncomingMessageEnvelope incomingMessageEnvelope = new IncomingMessageEnvelope(this.ssp, offset, key, message, size, eventTime, arrivalTime);
+		
 		return incomingMessageEnvelope;
 	}
 
-	/**
-	 * TODO: compute this based on key and message objects
-	 * 
-	 * @param delivery
-	 * @return
-	 */
-	protected int getKeyPlusMessageSize(Delivery delivery) {
+	protected long getKeyPlusMessageSize(Delivery delivery) {
 		String messageId = delivery.getProperties().getMessageId();
+		
 		int messageIdSize = messageId != null ? messageId.getBytes(StandardCharsets.UTF_8).length : 0;
-		int bodySize = (int) delivery.getProperties().getBodySize(); // TODO: ?
+		long bodySize = delivery.getProperties().getBodySize();
+		
 		return messageIdSize + bodySize;
 	}
 
-	private void moveMessagesToTheirQueue(SystemStreamPartition ssp, List<IncomingMessageEnvelope> envelopes) {
+	private void moveMessagesSamzaQueue(SystemStreamPartition ssp, List<IncomingMessageEnvelope> envelopes) {
 		for (IncomingMessageEnvelope envelope : envelopes) {
-			sink.addMessage(ssp, envelope); // move message to the BlockingEnvelopeMap's queue
+			sink.addMessage(ssp, envelope);
 
-			logger.trace("IncomingMessageEnvelope. got envelope with offset:{} for ssp={}", envelope.getOffset(), ssp);
+			logger.trace("Got IncomingMessageEnvelope with offset:{} for ssp={}", envelope.getOffset(), ssp);
 		}
 	}
 

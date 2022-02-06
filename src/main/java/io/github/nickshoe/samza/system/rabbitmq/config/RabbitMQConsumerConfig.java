@@ -7,11 +7,11 @@ import org.apache.samza.config.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.ConnectionFactoryConfigurator;
 
 /**
- * This is class is heavily inspired from Samza's official KafkaConsumerConfig class
- *
+ * This class is heavily inspired to Samza official KafkaConsumerConfig class
  */
 public class RabbitMQConsumerConfig extends HashMap<String, Object> {
 
@@ -26,10 +26,9 @@ public class RabbitMQConsumerConfig extends HashMap<String, Object> {
 	/**
 	 * Create rabbitmq consumer configs, based on the subset of global configs.
 	 * 
-	 * @param config     application config
+	 * @param config application config
 	 * @param systemName system name
-	 * @param clientId   client id provided by the caller
-	 * @return RabbitMQConsumerConfig
+	 * @return RabbitMQConsumerConfig the consumer config
 	 */
 	public static RabbitMQConsumerConfig getRabbitMQSystemConsumerConfig(Config config, String systemName) {
 
@@ -37,18 +36,11 @@ public class RabbitMQConsumerConfig extends HashMap<String, Object> {
 
 		Map<String, Object> consumerProps = new HashMap<>(subConf);
 
-		// Disable consumer auto-commit because Samza controls commits
-		// TODO: ? (see KafkaConsumerConfig)
+		// TODO: Disable consumer auto-commit because Samza controls commits
 
-		// check if samza default offset value is defined
-		// TODO: ? (see KafkaConsumerConfig)
-		//String systemOffsetDefault = new SystemConfig(config).getSystemOffsetDefault(systemName);
+		// TODO: Implement offset handling  
 
 		// Translate samza config value to rabbitmq config value
-		// TODO: ? (see KafkaConsumerConfig)
-		//logger.info("setting auto.offset.reset for system {} to {}", systemName, autoOffsetReset);
-
-		// TODO: allow to specify different rabbitmq connection configs for consumer and producer
 		String host = config.get(String.format("systems.%s.%s", systemName, "host"));
 		consumerProps.put(ConnectionFactoryConfigurator.HOST, host);
 		
@@ -61,7 +53,7 @@ public class RabbitMQConsumerConfig extends HashMap<String, Object> {
 		String password = config.get(String.format("systems.%s.%s", systemName, "password"));
 		consumerProps.put(ConnectionFactoryConfigurator.PASSWORD, password);
 
-		// TODO: set virtual host?
+		consumerProps.put(ConnectionFactoryConfigurator.VIRTUAL_HOST, ConnectionFactory.DEFAULT_VHOST);
 		
 		return new RabbitMQConsumerConfig(consumerProps);
 	}

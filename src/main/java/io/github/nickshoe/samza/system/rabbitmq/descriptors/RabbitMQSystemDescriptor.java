@@ -19,7 +19,7 @@ import io.github.nickshoe.samza.system.rabbitmq.RabbitMQSystemFactory;
  * <p>
  * System properties provided in configuration override corresponding properties specified using a descriptor.
  * 
- * This is class is heavily inspired from Samza's official KafkaSystemDescriptor class
+ * This class is heavily inspired to Samza official KafkaSystemDescriptor class
  */
 public class RabbitMQSystemDescriptor extends SystemDescriptor<RabbitMQSystemDescriptor>
 	implements SimpleInputDescriptorProvider, OutputDescriptorProvider {

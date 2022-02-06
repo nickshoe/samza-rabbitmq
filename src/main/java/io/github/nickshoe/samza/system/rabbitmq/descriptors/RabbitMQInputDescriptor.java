@@ -5,11 +5,6 @@ import org.apache.samza.system.descriptors.InputDescriptor;
 import org.apache.samza.system.descriptors.InputTransformer;
 import org.apache.samza.system.descriptors.SystemDescriptor;
 
-/**
- * This is class is heavily inspired from Samza's official KafkaInputDescriptor class
- *
- * @param <StreamMessageType>
- */
 public class RabbitMQInputDescriptor<StreamMessageType> extends InputDescriptor<StreamMessageType, RabbitMQInputDescriptor<StreamMessageType>> {
 
 	public RabbitMQInputDescriptor(String streamId, Serde<?> serde, SystemDescriptor<?> systemDescriptor, InputTransformer<?> transformer) {
