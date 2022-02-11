@@ -1,4 +1,4 @@
-# Samza RabbitMQ
+# Samza RabbitMQ connector
 
 RabbitMQ basic consumer and producer for Samza.
 
