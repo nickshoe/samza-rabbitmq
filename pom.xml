@@ -1,10 +1,15 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
-	<groupId>io.github.nickshoe</groupId>
 	<packaging>jar</packaging>
+	
+	<groupId>io.github.nickshoe</groupId>
 	<artifactId>samza-rabbitmq</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
+	
+	<name>${project.groupId}:${project.artifactId}</name>
+	<description>RabbitMQ basic system consumer and producer for Samza.</description>
+	<url>https://github.com/nickshoe/samza-rabbitmq</url>
 
 	<licenses>
 		<license>
@@ -25,7 +30,7 @@
 	<scm>
 		<connection>scm:git:git@github.com:nickshoe/samza-rabbitmq.git</connection>
 		<developerConnection>scm:git:git@github.com:nickshoe/samza-rabbitmq.git</developerConnection>
-		<url>git@github.com:nickshoe/samza-rabbitmq.git</url>
+		<url>https://github.com/nickshoe/samza-rabbitmq/tree/main</url>
 	</scm>
 
 	<properties>
