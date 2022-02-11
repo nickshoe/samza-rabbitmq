@@ -18,7 +18,7 @@ import io.github.nickshoe.samza.system.rabbitmq.config.RabbitMQProducerConfig;
 import io.github.nickshoe.samza.system.rabbitmq.util.RabbitMQUtil;
 
 /**
- * This is class is heavily inspired from Samza's official RabbitMQSystemFactory class
+ * This is class is heavily inspired from Samza's official KafkaSystemFactory class
  */
 public class RabbitMQSystemFactory implements SystemFactory {
 
