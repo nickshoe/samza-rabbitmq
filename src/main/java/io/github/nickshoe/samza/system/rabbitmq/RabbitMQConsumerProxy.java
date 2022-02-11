@@ -3,10 +3,6 @@ package io.github.nickshoe.samza.system.rabbitmq;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -29,32 +25,34 @@ public class RabbitMQConsumerProxy<K, V> {
 
 	private static final Logger logger = LoggerFactory.getLogger(RabbitMQSystemConsumer.class);
 
-	private final Thread consumerPollThread;
+	private final Thread consumerProxyThread;
 	private final Channel channel;
 	private final RabbitMQSystemConsumer<K, V> rabbitMQSystemConsumer;
 	private final RabbitMQSystemConsumer<K, V>.RabbitMQConsumerMessageSink sink;
 	private final String systemName;
 
-	private String queue;
+	private String queueName;
 	private SystemStreamPartition ssp;
 
 	private volatile boolean isRunning = false;
 	private volatile Throwable failureCause = null;
-	private final CountDownLatch consumerPollThreadStartLatch = new CountDownLatch(1);
+	private final CountDownLatch consumerThreadStartLatch = new CountDownLatch(1);
 
-	public RabbitMQConsumerProxy(RabbitMQSystemConsumer<K, V> rabbitMQSystemConsumer, Channel channel,
-			String systemName, RabbitMQSystemConsumer<K, V>.RabbitMQConsumerMessageSink messageSink) {
+	public RabbitMQConsumerProxy(
+		RabbitMQSystemConsumer<K, V> systemConsumer,
+		Channel channel,
+		String systemName, 
+		RabbitMQSystemConsumer<K, V>.RabbitMQConsumerMessageSink messageSink) {
 
-		this.rabbitMQSystemConsumer = rabbitMQSystemConsumer;
+		this.rabbitMQSystemConsumer = systemConsumer;
 		this.sink = messageSink;
 
 		this.channel = channel;
 		this.systemName = systemName;
 
-		this.consumerPollThread = new Thread(createProxyThreadRunnable());
-		this.consumerPollThread.setDaemon(true);
-		this.consumerPollThread
-				.setName("Samza RabbitMQConsumerProxy Poll " + consumerPollThread.getName() + " - " + systemName);
+		this.consumerProxyThread = new Thread(createProxyThreadRunnable());
+		this.consumerProxyThread.setDaemon(true);
+		this.consumerProxyThread.setName("Samza RabbitMQConsumerProxy " + consumerProxyThread.getName() + " - " + systemName);
 
 		logger.info("Creating RabbitMQConsumerProxy with systeName={}", systemName);
 	}
@@ -68,36 +66,36 @@ public class RabbitMQConsumerProxy<K, V> {
 	}
 
 	/**
-	 * Add new partition to the list of polled partitions. 
+	 * Set the system stream partition to be populated with RabbitMQ consumed messages. 
 	 * Must be called before {@link RabbitMQConsumerProxy#start} is called.
 	 * 
 	 * @param ssp        - SystemStreamPartition to add
 	 */
-	public void addQueue(SystemStreamPartition ssp) {
-		logger.info(String.format("Adding new stream partition %s to queue for consumer %s", ssp, this));
+	public void setSystemStreamPartition(SystemStreamPartition ssp) {
+		logger.info(String.format("Setting system stream partition %s to be populated from consumer %s", ssp, this));
 
-		String queue = ssp.getStream();
+		String queueName = ssp.getStream();
 
-		this.queue = queue;
+		this.queueName = queueName;
 		this.ssp = ssp;
 	}
 
 	public void start() {
-		if (!consumerPollThread.isAlive()) {
-			logger.info("Starting RabbitMQConsumerProxy polling thread for " + this.toString());
+		if (!consumerProxyThread.isAlive()) {
+			logger.info("Starting RabbitMQConsumerProxy thread for " + this.toString());
 
-			consumerPollThread.start();
+			consumerProxyThread.start();
 
 			// we need to wait until the thread starts
 			while (!isRunning && failureCause == null) {
 				try {
-					consumerPollThreadStartLatch.await(3000, TimeUnit.MILLISECONDS);
+					consumerThreadStartLatch.await(3000, TimeUnit.MILLISECONDS);
 				} catch (InterruptedException e) {
-					logger.info("Ignoring InterruptedException while waiting for consumer poll thread to start.", e);
+					logger.info("Ignoring InterruptedException while waiting for consumer thread to start.", e);
 				}
 			}
 		} else {
-			logger.warn("Tried to start an already started KafkaConsumerProxy (%s). Ignoring.", this.toString());
+			logger.warn("Tried to start an already started RabbitMQConsumerProxy (%s). Ignoring.", this.toString());
 		}
 	}
 
@@ -107,20 +105,19 @@ public class RabbitMQConsumerProxy<K, V> {
 	 * @param timeoutMs maximum time to wait to stop this RabbitMQConsumerProxy
 	 */
 	public void stop(long timeoutMs) {
-		logger.info("Shutting down RabbitMQConsumerProxy poll thread {} for {}", consumerPollThread.getName(), this);
+		logger.info("Shutting down RabbitMQConsumerProxy thread {} for {}", consumerProxyThread.getName(), this);
 
 		isRunning = false;
 		try {
-			consumerPollThread.join(timeoutMs / 2);
-			// join() may timeout
-			// in this case we should interrupt it and wait again
-			if (consumerPollThread.isAlive()) {
-				consumerPollThread.interrupt();
-				consumerPollThread.join(timeoutMs / 2);
+			consumerProxyThread.join(timeoutMs / 2);
+			// join() may timeout, in this case we should interrupt it and wait again
+			if (consumerProxyThread.isAlive()) {
+				consumerProxyThread.interrupt();
+				consumerProxyThread.join(timeoutMs / 2);
 			}
 		} catch (InterruptedException e) {
 			logger.warn("Join in RabbitMQConsumerProxy has failed", e);
-			consumerPollThread.interrupt();
+			consumerProxyThread.interrupt();
 		}
 	}
 
@@ -135,12 +132,13 @@ public class RabbitMQConsumerProxy<K, V> {
 			isRunning = true;
 
 			try {
-				consumerPollThreadStartLatch.countDown();
-				logger.info("Starting consumer poll thread {} for system {}", consumerPollThread.getName(), systemName);
+				consumerThreadStartLatch.countDown();
+				logger.info("Starting consumer thread {} for system {}", consumerProxyThread.getName(), systemName);
 
 				fetchMessages();
 			} catch (Throwable throwable) {
-				logger.error(String.format("Error in RabbitMQConsumerProxy poll thread for system: %s.", systemName), throwable);
+				logger.error(String.format("Error in RabbitMQConsumerProxy thread for system: %s.", systemName), throwable);
+				
 				// RabbitMQSystemConsumer uses the failureCause to propagate the throwable to the container
 				failureCause = throwable;
 				isRunning = false;
@@ -155,46 +153,34 @@ public class RabbitMQConsumerProxy<K, V> {
 
 	private void fetchMessages() throws IOException {
 		// the actual consumption of the messages from rabbitmq
-		boolean shouldAutoAck = true; // TODO: which are the implication with respect to Samza commit handling and offsets?
-		this.channel.basicConsume(this.queue, shouldAutoAck, (String consumerTag, Delivery message) -> {
-			Map<SystemStreamPartition, List<IncomingMessageEnvelope>> response = processMessage(message);
+		
+		boolean shouldAutoAck = false; // TODO: which are the implication with respect to Samza commit handling and offsets?
+		String generatedConsumerTag = this.channel.basicConsume(this.queueName, shouldAutoAck, (String consumerTag, Delivery message) -> {
+			long deliveryTag = message.getEnvelope().getDeliveryTag();
+			
+			IncomingMessageEnvelope incomingMessageEnvelope = processMessage(message);
 
-			// move the responses into the queue
-			for (Map.Entry<SystemStreamPartition, List<IncomingMessageEnvelope>> e : response.entrySet()) {
-				List<IncomingMessageEnvelope> envelopes = e.getValue();
-				if (envelopes != null) {
-					moveMessagesSamzaQueue(e.getKey(), envelopes);
-				}
-			}
+			moveMessageToSamza(this.ssp, incomingMessageEnvelope);
+			
+			this.channel.basicAck(deliveryTag, false);
 		}, (String consumerTag) -> {
 			logger.error("The message consumer {} was cancelled...", consumerTag);
 
 			// TODO: what to do here?
 		});
+		
+		logger.info("Subscribed a new RabbitMQ consumer to receive messages from {} with consumerTag {}", this.queueName, generatedConsumerTag);
 	}
 
-	private Map<SystemStreamPartition, List<IncomingMessageEnvelope>> processMessage(Delivery delivery) {
+	private IncomingMessageEnvelope processMessage(Delivery delivery) {
 		if (delivery == null) {
 			throw new SamzaException("Received null 'message' after polling consumer in RabbitMQConsumerProxy " + this);
 		}
 
-		Map<SystemStreamPartition, List<IncomingMessageEnvelope>> results = new HashMap<>(1);
-		List<IncomingMessageEnvelope> incomingMessagesEnvelopes = results.computeIfAbsent(ssp, k -> new ArrayList<>());
-
 		// Parse the returned message and convert it into the IncomingMessageEnvelope.
 		IncomingMessageEnvelope incomingMessageEnvelope = buildIncomingMessageEnvelope(delivery);
 
-		incomingMessagesEnvelopes.add(incomingMessageEnvelope);
-
-		if (logger.isDebugEnabled()) {
-			logger.debug("# records per SSP:");
-			for (Map.Entry<SystemStreamPartition, List<IncomingMessageEnvelope>> e : results.entrySet()) {
-				List<IncomingMessageEnvelope> list = e.getValue();
-				logger.debug(e.getKey() + " = " + ((list == null) ? 0 : list.size()));
-			}
-		}
-
-		return results;
+		return incomingMessageEnvelope;
 	}
 
 	private IncomingMessageEnvelope buildIncomingMessageEnvelope(Delivery delivery) {
@@ -223,12 +209,10 @@ public class RabbitMQConsumerProxy<K, V> {
 		return messageIdSize + bodySize;
 	}
 
-	private void moveMessagesSamzaQueue(SystemStreamPartition ssp, List<IncomingMessageEnvelope> envelopes) {
-		for (IncomingMessageEnvelope envelope : envelopes) {
-			sink.addMessage(ssp, envelope);
-
-			logger.trace("Got IncomingMessageEnvelope with offset:{} for ssp={}", envelope.getOffset(), ssp);
-		}
+	private void moveMessageToSamza(SystemStreamPartition ssp, IncomingMessageEnvelope envelope) {
+		sink.addMessage(ssp, envelope);
+		
+		logger.trace("Moved IncomingMessageEnvelope with offset:{} to ssp={}", envelope.getOffset(), ssp);
 	}
 
 	public static class BaseFactory<K, V> implements RabbitMQConsumerProxyFactory<K, V> {

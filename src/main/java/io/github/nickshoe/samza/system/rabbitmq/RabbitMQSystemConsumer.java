@@ -35,13 +35,10 @@ public class RabbitMQSystemConsumer<K, V> extends BlockingEnvelopeMap implements
 	private final AtomicBoolean started = new AtomicBoolean(false);
 	private final AtomicBoolean stopped = new AtomicBoolean(false);
 
-	// This sink is used to transfer the messages from the proxy/consumer to the
-	// BlockingEnvelopeMap.
+	// This sink is used to transfer the messages from the proxy/consumer to the BlockingEnvelopeMap.
 	final RabbitMQConsumerMessageSink messageSink;
 
-	// This proxy contains a separate thread, which reads kafka messages (with
-	// consumer.poll()) and populates
-	// BlockingEnvelopMap's buffers.
+	// This proxy contains a separate thread, which reads rabbitmq messages and populates BlockingEnvelopMap's buffers.
 	private final RabbitMQConsumerProxy<K, V> proxy;
 
 	private String queueName;
@@ -138,12 +135,13 @@ public class RabbitMQSystemConsumer<K, V> extends BlockingEnvelopeMap implements
 	}
 
 	@Override
-	public Map<SystemStreamPartition, List<IncomingMessageEnvelope>> poll(
-			Set<SystemStreamPartition> systemStreamPartitions, long timeout) throws InterruptedException {
+	public Map<SystemStreamPartition, List<IncomingMessageEnvelope>> poll(Set<SystemStreamPartition> systemStreamPartitions, long timeout) throws InterruptedException {
 		// check if the proxy is running
 		if (!proxy.isRunning()) {
 			logger.info("{}: RabbitMQConsumerProxy is not running. Stopping the consumer.", this);
+			
 			stop();
+			
 			String message = String.format("%s: RabbitMQConsumerProxy has stopped.", this);
 			throw new SamzaException(message, proxy.getFailureCause());
 		}
@@ -167,11 +165,11 @@ public class RabbitMQSystemConsumer<K, V> extends BlockingEnvelopeMap implements
 		SystemStreamPartition ssp = new SystemStreamPartition(systemName, this.queueName, partition);
 
 		//long nextOffset = 0L; // TODO: how to value this?
-		proxy.addQueue(ssp); 
+		proxy.setSystemStreamPartition(ssp); 
 
 		// start the proxy thread
 		if (proxy != null && !proxy.isRunning()) {
-			logger.info("{}: Starting consumer poll thread {}", this, proxy);
+			logger.info("{}: Starting consumer proxy thread {}", this, proxy);
 			proxy.start();
 		}
 	}
@@ -184,9 +182,9 @@ public class RabbitMQSystemConsumer<K, V> extends BlockingEnvelopeMap implements
 			try {
 				put(ssp, envelope);
 			} catch (InterruptedException e) {
-				throw new SamzaException(String.format(
-						"%s: Consumer was interrupted while trying to add message with offset %s for ssp %s", this,
-						envelope.getOffset(), ssp));
+				throw new SamzaException(
+					String.format("%s: Consumer was interrupted while trying to add message with offset %s for ssp %s", this, envelope.getOffset(), ssp)
+				);
 			}
 		}
 
