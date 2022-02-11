@@ -5,7 +5,7 @@
 
 	<groupId>io.github.nickshoe</groupId>
 	<artifactId>samza-rabbitmq</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>0.0.1</version>
 
 	<name>${project.groupId}:${project.artifactId}</name>
 	<description>RabbitMQ basic system consumer and producer for Samza.</description>
@@ -31,7 +31,8 @@
 		<connection>scm:git:git@github.com:nickshoe/samza-rabbitmq.git</connection>
 		<developerConnection>scm:git:git@github.com:nickshoe/samza-rabbitmq.git</developerConnection>
 		<url>https://github.com/nickshoe/samza-rabbitmq/tree/main</url>
-	</scm>
+	  <tag>0.0.1</tag>
+  </scm>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
