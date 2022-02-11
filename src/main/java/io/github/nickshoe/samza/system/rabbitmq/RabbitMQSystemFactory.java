@@ -64,7 +64,6 @@ public class RabbitMQSystemFactory implements SystemFactory {
 
 	@Override
 	public SystemAdmin getAdmin(String systemName, Config config) {
-		// Preso da codice di Mila Berni
 		/**
 		 * RabbitMQ, even if it doesn't support the concept of "partitions" natively, actually knows the concept of "offsets"; 
 		 * an ad-hoc implementation is needed (see org.apache.samza.system.kafka.KafkaSystemAdmin) 
